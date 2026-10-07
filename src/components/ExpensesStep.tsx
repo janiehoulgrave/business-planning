@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ArrowLeft, FileDown, Loader2 } from 'lucide-react';
 import { ASSESSMENT } from '../config';
 import {
@@ -27,30 +27,28 @@ interface Props {
 const fieldClass =
   'h-11 rounded-lg border border-line bg-paper text-[16px] outline-none transition-colors focus:border-blue focus:ring-2 focus:ring-blue/15';
 
-// Dollar field: shows "1,250" at rest, the plain number while editing.
+// Dollar field: a plain text box, same as the name fields. Whatever is typed is kept as-is;
+// "$" and commas are ignored when adding up, and anything that isn't a number is outlined.
 const MoneyInput: React.FC<{ id: string; label: string; value: string; onChange: (v: string) => void }> = ({
   id,
   label,
   value,
   onChange,
 }) => {
-  const [editing, setEditing] = useState(false);
-  const n = amountOf({ amount: value });
-  const shown = editing || n === null ? value : n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  const invalid = value.trim() !== '' && amountOf({ amount: value }) === null;
   return (
     <div className="relative w-36 shrink-0">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate pointer-events-none">$</span>
       <input
         id={id}
+        type="text"
         aria-label={label}
-        inputMode="decimal"
+        aria-invalid={invalid || undefined}
         autoComplete="off"
-        className={`${fieldClass} w-full pl-7 pr-3 text-right tabular-nums`}
-        value={shown}
+        className={`${fieldClass} w-full pl-7 pr-3 text-right tabular-nums ${invalid ? '!border-amber' : ''}`}
+        value={value}
         placeholder="0"
-        onFocus={() => setEditing(true)}
-        onBlur={() => setEditing(false)}
-        onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
+        onChange={(e) => onChange(e.target.value)}
       />
     </div>
   );

@@ -52,7 +52,9 @@ export const otherKey = (group: string, i: number) => `${group}.other${i}`;
 
 export const amountOf = (e?: ExpenseEntry): number | null => {
   if (!e || !e.amount) return null;
-  const n = Number(e.amount.replace(/[$,\s]/g, ''));
+  const cleaned = e.amount.replace(/[$,\s]/g, '');
+  if (cleaned === '') return null;
+  const n = Number(cleaned);
   return isFinite(n) ? n : null;
 };
 
