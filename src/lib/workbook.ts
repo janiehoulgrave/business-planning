@@ -367,30 +367,23 @@ const buildGoals = (wb: ExcelJS.Workbook, a: AssessmentRefs) => {
 // ---------------------------------------------------------------
 // Tab 5: Target sources of business for next year
 // ---------------------------------------------------------------
-const buildSourceGoals = (wb: ExcelJS.Workbook, a: AssessmentRefs) => {
+const buildSourceGoals = (wb: ExcelJS.Workbook) => {
   const ws = sheet(wb, `My Sources of Business ${GOAL_YEAR}`, [36.9, 14.9, 14.4]);
   title(ws, 'A1:C2', `My Sources of Business for ${GOAL_YEAR}`);
   const labels = [...SHEET_SOURCES, 'Other (name them here)', 'Other (name them here)'];
-  // Number of Sales counts each source on the Assessment tab, so these fill in automatically.
-  // The first "Other" row counts deals marked Other; the second is left for the agent.
-  const S = ref(a.sheet);
-  const count = (t: { first: number; last: number }) => (i: number) => {
-    const source = i < SHEET_SOURCES.length ? SHEET_SOURCES[i] : i === SHEET_SOURCES.length ? 'Other' : null;
-    return source ? formula(`COUNTIF(${S}!$G$${t.first}:$G$${t.last},"${source}")`) : undefined;
-  };
   const buyer = sourceBlock(ws, 3, {
     labels,
     label: 'Buyer Side',
     totalLabel: 'TOTAL Buyers',
     totalLabelFont: f({ bold: true, italic: true }),
-    values: count(a.buyer),
+    values: () => undefined,
   });
   const seller = sourceBlock(ws, buyer.next, {
     labels,
     label: 'Seller Side',
     totalLabel: 'TOTAL Listings',
     totalLabelFont: f({ italic: true }),
-    values: count(a.listing),
+    values: () => undefined,
   });
   sourceBlock(ws, seller.next, {
     labels,
@@ -418,7 +411,7 @@ export const buildWorkbook = async (
   buildSources(wb, a);
   buildExpenses(wb, expenses);
   buildGoals(wb, a);
-  buildSourceGoals(wb, a);
+  buildSourceGoals(wb);
 
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
 };

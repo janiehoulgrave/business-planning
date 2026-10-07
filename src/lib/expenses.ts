@@ -28,7 +28,7 @@ export const EXPENSE_GROUPS: ExpenseGroup[] = [
     key: 'general',
     title: 'General business',
     totalLabel: 'TOTAL General Business Expenses',
-    items: ['Resource Fee', 'E&O Insurance', 'Bright Fees', 'Association Fees', 'CE Classes', 'License Renewals'],
+    items: ['Resource Fee', 'E&O Insurance', 'MLS Fees', 'Association Fees', 'CE Classes', 'License Renewals'],
     others: 3,
   },
   {
