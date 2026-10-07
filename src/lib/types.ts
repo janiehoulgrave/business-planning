@@ -17,7 +17,7 @@ export interface Deal {
   excluded: boolean;
 }
 
-export type Step = 'instructions' | 'upload' | 'enrich' | 'review' | 'done';
+export type Step = 'instructions' | 'upload' | 'enrich' | 'review' | 'expenses' | 'done';
 
 export interface SavedState {
   deals: Deal[];
@@ -27,6 +27,7 @@ export interface SavedState {
   reachedReview: boolean;
   submittedAt?: string | null;
   sheetUrl?: string | null; // the Google Sheet made from the latest workbook
+  expenses?: Record<string, { amount: string; name?: string }>;
 }
 
 export const toNumber = (v: string | number | null | undefined): number | null => {

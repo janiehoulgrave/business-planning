@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { ASSESSMENT, GOAL_YEAR, sourceByKey } from '../config';
 import { Deal, toNumber } from './types';
+import { amountOf, EXPENSE_GROUPS, ExpenseEntry, Expenses, itemKey, otherKey } from './expenses';
 
 // ---------------------------------------------------------------
 // Builds the finished Business Planning workbook in the browser.
@@ -276,7 +277,7 @@ const buildSources = (wb: ExcelJS.Workbook, a: AssessmentRefs) => {
 // ---------------------------------------------------------------
 // Tab 3: Expenses (filled in during the session)
 // ---------------------------------------------------------------
-const buildExpenses = (wb: ExcelJS.Workbook) => {
+const buildExpenses = (wb: ExcelJS.Workbook, expenses: Expenses) => {
   const ws = sheet(wb, 'My Expenses', [37.9, 25.5]);
   title(ws, 'A1:B2', `Expenses ${ASSESSMENT.year}`);
   instructions(
@@ -285,19 +286,25 @@ const buildExpenses = (wb: ExcelJS.Workbook) => {
     'Instructions: fill up the annual Expense Amount ($) for each of these categories at the best of your knowledge. This will help us budget for the new year!',
   );
   ws.getRow(3).height = 40;
-  const groups: [string, string[]][] = [
-    ['TOTAL Marketing Expenses', ['Print & Digital', 'Events', 'PopBys', 'Client Lunches & Coffees', 'Other Expenses', 'Other Expenses', 'Other Expenses']],
-    ['TOTAL Listing Expenses', ['Photography', 'Staging', 'Cleaning Services', 'Marketing', 'Other Expenses', 'Other Expenses', 'Other Expenses']],
-    ['TOTAL General Business Expenses', ['Resource Fee', 'E&O Insurance', 'Bright Fees', 'Association Fees', 'CE Classes', 'License Renewals', 'Other Expenses', 'Other Expenses', 'Other Expenses']],
-    ['TOTAL Networking & Travel Expenses ', ['Retreat', 'Networking + Training Events', 'Travel Fees', 'Other Expenses', 'Other Expenses', 'Other Expenses']],
-  ];
+  // [label, saved answer] per row, in template order: named categories, then three "Other Expenses" rows.
+  const groups: [string, [string, ExpenseEntry | undefined][]][] = EXPENSE_GROUPS.map((g) => [
+    g.totalLabel,
+    [
+      ...g.items.map((label, i): [string, ExpenseEntry | undefined] => [label, expenses[itemKey(g.key, i)]]),
+      ...Array.from({ length: g.others }, (_, i): [string, ExpenseEntry | undefined] => {
+        const e = expenses[otherKey(g.key, i)];
+        return [e?.name?.trim() || 'Other Expenses', e];
+      }),
+    ],
+  ]);
   let r = 4;
   const totals: number[] = [];
   groups.forEach(([totalLabel, items], gi) => {
     const first = r;
-    for (const item of items) {
-      put(ws, [r, 1], item, { align: { wrapText: true } });
-      put(ws, [r, 2], undefined, { fmt: CURRENCY });
+    for (const [label, entry] of items) {
+      put(ws, [r, 1], label, { align: { wrapText: true } });
+      const amt = amountOf(entry);
+      put(ws, [r, 2], amt !== null ? amt : undefined, { fmt: CURRENCY });
       r++;
     }
     const lastGroup = gi === groups.length - 1;
@@ -389,7 +396,11 @@ const buildSourceGoals = (wb: ExcelJS.Workbook) => {
   });
 };
 
-export const buildWorkbook = async (allDeals: Deal[], agent: { name: string; email: string }): Promise<ArrayBuffer> => {
+export const buildWorkbook = async (
+  allDeals: Deal[],
+  agent: { name: string; email: string },
+  expenses: Expenses = {},
+): Promise<ArrayBuffer> => {
   const deals = allDeals.filter((d) => !d.excluded).sort((x, y) => x.closeDate.localeCompare(y.closeDate));
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Compass Business Planning Series';
@@ -398,7 +409,7 @@ export const buildWorkbook = async (allDeals: Deal[], agent: { name: string; ema
 
   const a = buildAssessment(wb, deals, agent.name);
   buildSources(wb, a);
-  buildExpenses(wb);
+  buildExpenses(wb, expenses);
   buildGoals(wb, a);
   buildSourceGoals(wb);
 

@@ -12,6 +12,7 @@ import { Upload } from './components/Upload';
 import { DealCard } from './components/DealCard';
 import { Review } from './components/Review';
 import { Done, EmailStatus } from './components/Done';
+import { ExpensesStep } from './components/ExpensesStep';
 
 const EMPTY: SavedState = { deals: [], fileNames: [], step: 'instructions', index: 0, reachedReview: false, submittedAt: null };
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -84,7 +85,7 @@ const App: React.FC = () => {
 
   const makeWorkbook = async () => {
     const { buildWorkbook } = await import('./lib/workbook');
-    return buildWorkbook(state.deals, { name: agent!.name, email: agent!.email });
+    return buildWorkbook(state.deals, { name: agent!.name, email: agent!.email }, state.expenses ?? {});
   };
 
   const build = async () => {
@@ -229,7 +230,18 @@ const App: React.FC = () => {
             building={building}
             onEdit={(i) => patch({ index: i, step: 'enrich' })}
             onAddFiles={() => patch({ step: 'upload' })}
+            onBuild={() => patch({ step: 'expenses' })}
+          />
+        );
+        break;
+      case 'expenses':
+        body = (
+          <ExpensesStep
+            expenses={state.expenses ?? {}}
+            onChange={(expenses) => patch({ expenses })}
+            onBack={() => patch({ step: 'review' })}
             onBuild={build}
+            building={building}
           />
         );
         break;

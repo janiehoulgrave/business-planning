@@ -28,6 +28,10 @@ const steps = [
     ),
   },
   {
+    title: 'Add your expenses',
+    body: <>Enter your annual business expenses by category. A best estimate is fine. These fill in the Expenses tab.</>,
+  },
+  {
     title: 'Get your workbook',
     body: <>Review everything on one page, then download your finished workbook. We also email you a copy for the next session.</>,
   },
@@ -61,7 +65,7 @@ export const Instructions: React.FC<Props> = ({ onNext, savedDeals = 0, onResume
     )}
     <h1 className="text-[32px] md:text-[40px] font-bold tracking-[-0.015em] leading-tight">How this works</h1>
     <p className="mt-3 text-[17px] text-slate max-w-[60ch]">
-      Four steps. Your answers save automatically, so you can close the tab and come back to finish.
+      Five steps. Your answers save automatically, so you can close the tab and come back to finish.
     </p>
 
     <ol className="mt-10 space-y-7">

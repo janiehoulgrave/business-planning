@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, FileDown, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, ArrowRight, Plus } from 'lucide-react';
 import { ASSESSMENT, SOURCES, sourceByKey } from '../config';
 import { Deal, gci, missingFields, money, shortDate } from '../lib/types';
 import { DealStrip } from './DealStrip';
@@ -131,8 +131,7 @@ export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, bu
         </Button>
         <div className="flex flex-col sm:items-end gap-2">
           <Button size="lg" onClick={onBuild} disabled={incomplete.length > 0 || included.length === 0 || building}>
-            {building ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
-            {building ? 'Building your workbook' : 'Build my workbook'}
+            Next: your expenses <ArrowRight size={18} />
           </Button>
           {incomplete.length > 0 && <p className="text-[13px] text-slate">Finish the marked deals to continue.</p>}
         </div>
