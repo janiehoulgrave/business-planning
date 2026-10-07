@@ -28,6 +28,7 @@ export interface SavedState {
   submittedAt?: string | null;
   sheetUrl?: string | null; // the Google Sheet made from the latest workbook
   expenses?: Record<string, { amount: string; name?: string }>;
+  expensesSkipped?: boolean; // the agent chose to skip the Expenses step
 }
 
 export const toNumber = (v: string | number | null | undefined): number | null => {

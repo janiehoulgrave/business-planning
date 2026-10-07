@@ -20,6 +20,29 @@ const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.s
 const webhookReady = !import.meta.env.VITE_PREVIEW && WEBHOOK_URL.startsWith('https://');
 
 
+// Loads the spreadsheet builder (kept in a separate file so the first page loads fast).
+// If the site was updated while this page was open, the old file is gone: reload once
+// to pick up the new version. Answers are saved, so nothing is lost.
+const RELOAD_KEY = 'bps_reloaded_for_update';
+let builderPromise: Promise<typeof import('./lib/workbook')> | null = null;
+const loadBuilder = () => {
+  if (!builderPromise) {
+    builderPromise = import('./lib/workbook').catch((e) => {
+      builderPromise = null;
+      let recently = false;
+      try {
+        recently = Date.now() - Number(sessionStorage.getItem(RELOAD_KEY) || 0) < 60_000;
+        if (!recently) sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+      } catch {
+        recently = true;
+      }
+      if (!recently) window.location.reload();
+      throw e;
+    });
+  }
+  return builderPromise;
+};
+
 const App: React.FC = () => {
   const [agent, setAgent] = useState<Agent | null | undefined>(undefined);
   const [state, setState] = useState<SavedState>(EMPTY);
@@ -69,6 +92,17 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0 });
   }, [state.step, state.index]);
 
+  // Clear old messages when moving between steps.
+  useEffect(() => {
+    setNotice('');
+  }, [state.step]);
+
+  // Fetch the spreadsheet builder in the background as soon as someone signs in,
+  // so a site update later in their session can't leave them without it.
+  useEffect(() => {
+    if (agent) loadBuilder().catch(() => {});
+  }, [agent?.uid]);
+
   const patch = useCallback((p: Partial<SavedState>) => setState((s) => ({ ...s, ...p })), []);
 
   const updateDeal = (d: Deal) => setState((s) => ({ ...s, deals: s.deals.map((x) => (x.id === d.id ? d : x)) }));
@@ -83,16 +117,17 @@ const App: React.FC = () => {
   const prev = () =>
     setState((s) => (s.reachedReview ? { ...s, step: 'review' } : { ...s, index: Math.max(0, s.index - 1) }));
 
-  const makeWorkbook = async () => {
-    const { buildWorkbook } = await import('./lib/workbook');
-    return buildWorkbook(state.deals, { name: agent!.name, email: agent!.email }, state.expenses ?? {});
+  // Skipping expenses leaves the Expenses tab blank for the agent to fill in later.
+  const makeWorkbook = async (skipExpenses = !!state.expensesSkipped) => {
+    const { buildWorkbook } = await loadBuilder();
+    return buildWorkbook(state.deals, { name: agent!.name, email: agent!.email }, skipExpenses ? {} : state.expenses ?? {}, { branded: true });
   };
 
-  const build = async () => {
+  const build = async (withExpenses: boolean) => {
     if (!agent) return;
     setBuilding(true);
     try {
-      const buf = await makeWorkbook();
+      const buf = await makeWorkbook(!withExpenses);
       let status: EmailStatus = 'off';
       if (webhookReady) {
         try {
@@ -108,10 +143,11 @@ const App: React.FC = () => {
         }
       }
       setEmailStatus(status);
-      patch({ step: 'done', submittedAt: new Date().toISOString(), sheetUrl: null });
+      patch({ step: 'done', submittedAt: new Date().toISOString(), sheetUrl: null, expensesSkipped: !withExpenses });
     } catch (e) {
       console.error(e);
-      setNotice('Something went wrong building the workbook. Your answers are saved; try again in a moment.');
+      const detail = e instanceof Error && e.message ? ` (${e.message.slice(0, 120)})` : '';
+      setNotice(`Something went wrong building the workbook. Your answers are saved; refresh the page and try again.${detail}`);
     } finally {
       setBuilding(false);
     }
@@ -231,6 +267,7 @@ const App: React.FC = () => {
             onEdit={(i) => patch({ index: i, step: 'enrich' })}
             onAddFiles={() => patch({ step: 'upload' })}
             onBuild={() => patch({ step: 'expenses' })}
+            onSkipExpenses={() => build(false)}
           />
         );
         break;
@@ -240,7 +277,8 @@ const App: React.FC = () => {
             expenses={state.expenses ?? {}}
             onChange={(expenses) => patch({ expenses })}
             onBack={() => patch({ step: 'review' })}
-            onBuild={build}
+            onBuild={() => build(true)}
+            onSkip={() => build(false)}
             building={building}
           />
         );
@@ -258,6 +296,7 @@ const App: React.FC = () => {
             sheetsBusy={sheetsBusy}
             onEdit={() => patch({ step: 'review' })}
             onStartOver={startOver}
+            hasExpenses={!state.expensesSkipped && Object.values(state.expenses ?? {}).some((e) => e.amount?.trim())}
           />
         );
         break;

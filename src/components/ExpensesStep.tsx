@@ -21,6 +21,7 @@ interface Props {
   onChange: (e: Expenses) => void;
   onBack: () => void;
   onBuild: () => void;
+  onSkip: () => void;
   building: boolean;
 }
 
@@ -54,7 +55,7 @@ const MoneyInput: React.FC<{ id: string; label: string; value: string; onChange:
   );
 };
 
-export const ExpensesStep: React.FC<Props> = ({ expenses, onChange, onBack, onBuild, building }) => {
+export const ExpensesStep: React.FC<Props> = ({ expenses, onChange, onBack, onBuild, onSkip, building }) => {
   const set = (key: string, patch: Partial<ExpenseEntry>) =>
     onChange({ ...expenses, [key]: { ...(expenses[key] ?? { amount: '' }), ...patch } });
   const total = expensesTotal(expenses);
@@ -64,7 +65,7 @@ export const ExpensesStep: React.FC<Props> = ({ expenses, onChange, onBack, onBu
       <h1 className="text-[32px] md:text-[40px] font-bold tracking-[-0.015em] leading-tight">Your {ASSESSMENT.year} expenses</h1>
       <p className="mt-3 text-[17px] text-slate max-w-[62ch]">
         Enter the annual amount for each category, to the best of your knowledge. This helps you budget for the new year. Leave
-        anything that doesn't apply blank.
+        anything that doesn't apply blank, or skip this step and fill in the Expenses tab later.
       </p>
 
       <div className="mt-10 grid lg:grid-cols-2 gap-6 items-start">
@@ -120,9 +121,19 @@ export const ExpensesStep: React.FC<Props> = ({ expenses, onChange, onBack, onBu
       </div>
 
       <div className="mt-10 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-4">
-        <Button variant="quiet" onClick={onBack}>
-          <ArrowLeft size={16} /> Back to your deals
-        </Button>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Button variant="quiet" onClick={onBack}>
+            <ArrowLeft size={16} /> Back to your deals
+          </Button>
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={building}
+            className="h-11 px-3 text-[15px] text-slate underline underline-offset-4 decoration-line hover:text-ink disabled:opacity-50"
+          >
+            Skip this step
+          </button>
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           <p className="text-[16px]">
             Total expenses <span className="font-bold tabular-nums ml-1">{dollars(total)}</span>

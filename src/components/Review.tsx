@@ -10,13 +10,14 @@ interface Props {
   onEdit: (i: number) => void;
   onAddFiles: () => void;
   onBuild: () => void;
+  onSkipExpenses: () => void;
   building: boolean;
 }
 
 const compact = (n: number) =>
   n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M` : n >= 1000 ? `$${Math.round(n / 1000)}K` : money(n);
 
-export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, building }) => {
+export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, onSkipExpenses, building }) => {
   const included = deals.filter((d) => !d.excluded);
   const incomplete = included.filter((d) => missingFields(d).length > 0);
   const volume = included.reduce((s, d) => s + d.price, 0);
@@ -133,7 +134,18 @@ export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, bu
           <Button size="lg" onClick={onBuild} disabled={incomplete.length > 0 || included.length === 0 || building}>
             Next: your expenses <ArrowRight size={18} />
           </Button>
-          {incomplete.length > 0 && <p className="text-[13px] text-slate">Finish the marked deals to continue.</p>}
+          {incomplete.length > 0 ? (
+            <p className="text-[13px] text-slate">Finish the marked deals to continue.</p>
+          ) : (
+            <button
+              type="button"
+              onClick={onSkipExpenses}
+              disabled={included.length === 0 || building}
+              className="text-[14px] text-slate underline underline-offset-4 decoration-line hover:text-ink disabled:opacity-50"
+            >
+              {building ? 'Building your workbook' : 'Skip expenses and build my workbook'}
+            </button>
+          )}
         </div>
       </div>
     </div>

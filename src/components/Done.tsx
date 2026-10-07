@@ -19,15 +19,17 @@ interface Props {
   sheetsBusy: boolean;
   onEdit: () => void;
   onStartOver: () => void;
+  hasExpenses: boolean;
 }
 
-export const Done: React.FC<Props> = ({ deals, onDownload, onOpenSheets, sheetUrl, sheetsBusy, onEdit, onStartOver }) => {
+export const Done: React.FC<Props> = ({ deals, onDownload, onOpenSheets, sheetUrl, sheetsBusy, onEdit, onStartOver, hasExpenses }) => {
   return (
     <div className="step-in max-w-2xl mx-auto px-5 py-12 md:py-16">
       <h1 className="text-[34px] md:text-[44px] font-bold tracking-[-0.02em] leading-[1.08]">Your workbook is ready.</h1>
       <p className="mt-4 text-[18px] text-slate leading-relaxed">
-        It has your {ASSESSMENT.year} assessment, sources of business, and expenses filled in, plus {GOAL_YEAR} goal pages you'll work
-        on in the next session. Bring it to the marketing strategy workshop too.
+        {hasExpenses
+          ? `It has your ${ASSESSMENT.year} assessment, sources of business, and expenses filled in, plus ${GOAL_YEAR} goal pages you'll work on in the next session.`
+          : `It has your ${ASSESSMENT.year} assessment and sources of business filled in, plus pages for expenses and ${GOAL_YEAR} goals you'll work on in the next session.`} Bring it to the marketing strategy workshop too.
       </p>
 
       <Panel className="mt-8 p-6 md:p-7">
