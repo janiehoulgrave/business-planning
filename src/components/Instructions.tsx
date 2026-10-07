@@ -33,7 +33,7 @@ const steps = [
   },
   {
     title: 'Get your workbook',
-    body: <>Review everything on one page, then download your finished workbook. We also email you a copy for the next session.</>,
+    body: <>Review everything on one page, then open your finished workbook in Google Sheets or download it for the next session.</>,
   },
 ];
 

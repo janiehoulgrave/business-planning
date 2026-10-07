@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileSpreadsheet, Loader2, Mail, MailWarning, PencilLine } from 'lucide-react';
+import { Download, FileSpreadsheet, Loader2, PencilLine } from 'lucide-react';
 import { ASSESSMENT, GOAL_YEAR } from '../config';
 import { Deal } from '../lib/types';
 import { DealStrip } from './DealStrip';
@@ -21,10 +21,7 @@ interface Props {
   onStartOver: () => void;
 }
 
-export const Done: React.FC<Props> = ({ email, deals, emailStatus, submittedAt, onDownload, onOpenSheets, sheetUrl, sheetsBusy, onEdit, onStartOver }) => {
-  const when = submittedAt
-    ? new Date(submittedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
-    : null;
+export const Done: React.FC<Props> = ({ deals, onDownload, onOpenSheets, sheetUrl, sheetsBusy, onEdit, onStartOver }) => {
   return (
     <div className="step-in max-w-2xl mx-auto px-5 py-12 md:py-16">
       <h1 className="text-[34px] md:text-[44px] font-bold tracking-[-0.02em] leading-[1.08]">Your workbook is ready.</h1>
@@ -59,26 +56,12 @@ export const Done: React.FC<Props> = ({ email, deals, emailStatus, submittedAt, 
               <PencilLine size={18} /> Make changes
             </Button>
           </div>
-          {sheetUrl && <p className="text-[14px] text-slate">Saved to your Google Drive. Changes you make there stay in your copy.</p>}
+          <p className="text-[14px] text-slate">
+            {sheetUrl
+              ? 'Saved to your Google Drive. Changes you make there stay in your copy.'
+              : 'Your answers are saved, so you can come back to this page any time to open or download your workbook again.'}
+          </p>
         </div>
-        {emailStatus !== 'off' && (
-        <div className="mt-5 flex gap-2.5 items-start text-[14px] text-slate">
-          {emailStatus === 'failed' ? (
-            <>
-              <MailWarning size={18} className="text-amber shrink-0" />
-              <span>We couldn't email your copy just now. Download it above; your answers are saved, so you can also come back later.</span>
-            </>
-          ) : (
-            <>
-              <Mail size={18} className="shrink-0" />
-              <span>
-                {emailStatus === 'earlier' && when ? `A copy was emailed to ${email} on ${when}.` : `A copy is on its way to ${email}.`} You can
-                return to this page any time to download it again.
-              </span>
-            </>
-          )}
-        </div>
-        )}
       </Panel>
 
       <ConfirmButton
