@@ -1,0 +1,15 @@
+ADD this block to the SignatureStudio Firestore rules. Do not replace the existing rules.
+
+Where: Firebase console > Firestore Database > Rules tab.
+Paste it on its own line inside the existing
+    match /databases/{database}/documents {
+        ...
+    }
+block, next to the other "match" blocks that are already there, then click Publish.
+
+    // Business Planning Series: each agent can only read and write their own record.
+    match /businessPlanningSeries/{uid} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.email.matches('.*@compass[.]com$');
+    }

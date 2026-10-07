@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+
+/* Compass Sans: drop the font files into public/fonts with these names (see README). */
+@font-face {
+  font-family: 'Compass Sans';
+  src: url('/fonts/CompassSans-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Compass Sans';
+  src: url('/fonts/CompassSans-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Compass Sans';
+  src: url('/fonts/CompassSans-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Compass Sans', 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-mist: #eef2f6;
+  --color-line: #d7dde4;
+  --color-slate: #5b6470;
+  --color-faint: #8a939e;
+  --color-blue: #0064e5;
+  --color-blue-tint: #e8f1fd;
+  --color-amber: #a8550a;
+  --color-amber-tint: #fff4e5;
+  --color-green: #0b7a4b;
+}
+
+html,
+body {
+  background: var(--color-mist);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+input::placeholder {
+  color: #a3abb5;
+}
+
+.step-in {
+  animation: stepIn 0.28s ease-out;
+}
+@keyframes stepIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-in {
+    animation: none;
+  }
+}
