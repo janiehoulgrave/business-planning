@@ -279,7 +279,7 @@ const buildAssessment = (wb: ExcelJS.Workbook, deals: Deal[], agentName: string)
       const net = d ? toNumber(d.netIncome) : null;
       if (!BRAND) put(ws, [rowNum, 1], formula(`IF(C${rowNum}="","",COUNTA(C$${first}:C${rowNum}))`), { font: f({ bold: i === 0 }) });
       put(ws, [rowNum, 2], d ? d.clientName.trim() : undefined, { border: true });
-      put(ws, [rowNum, 3], d ? d.address + (d.fromDual ? ' (dual)' : '') : undefined, { border: true });
+      put(ws, [rowNum, 3], d ? d.address + (d.fromDual ? ' (dual)' : '') + (d.pending ? ' (expected)' : '') : undefined, { border: true });
       put(ws, [rowNum, 4], d ? toExcelDate(d.closeDate) : undefined, { border: true, fmt: DATE });
       put(ws, [rowNum, 5], d ? d.price : undefined, { border: true, fmt: CURRENCY });
       put(ws, [rowNum, 6], pct !== null ? pct / 100 : undefined, { border: true, fmt: PCT });

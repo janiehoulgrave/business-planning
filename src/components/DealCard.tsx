@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, EyeOff, Undo2 } from 'lucide-react';
-import { SOURCES, sourceByKey } from '../config';
-import { Deal, gci, missingFields, money, shortDate, Side, toNumber } from '../lib/types';
+import { ArrowLeft, ArrowRight, Check, EyeOff, Trash2, Undo2 } from 'lucide-react';
+import { ASSESSMENT, SOURCES, sourceByKey } from '../config';
+import { Deal, gci, missingFields, money, pendingMinDate, shortDate, Side, toNumber } from '../lib/types';
+import { ConfirmButton } from './ConfirmButton';
 import { DealStrip } from './DealStrip';
 import { Button, inputClass, Label, Panel } from './ui';
 
@@ -13,23 +14,31 @@ interface Props {
   onPrev: () => void;
   onJump: (i: number) => void;
   returnToReview: boolean;
+  onRemove: () => void;
 }
 
 const roundPct = (n: number) => String(Math.round(n * 1000) / 1000);
 
-export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPrev, onJump, returnToReview }) => {
+export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPrev, onJump, returnToReview, onRemove }) => {
   const deal = deals[index];
   const set = (patch: Partial<Deal>) => onUpdate({ ...deal, ...patch });
   const src = sourceByKey(deal.source);
   const missing = missingFields(deal);
   const nameRef = useRef<HTMLInputElement>(null);
+  const addressRef = useRef<HTMLInputElement>(null);
+  const [priceText, setPriceText] = useState('');
+  useEffect(() => {
+    setPriceText(deal.price ? String(deal.price) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deal.id]);
 
   // GCI and commission % are linked: typing either fills in the other.
   const [gciText, setGciText] = useState('');
   useEffect(() => {
     const g = gci(deal);
     setGciText(g === null ? '' : String(g));
-    if (!deal.clientName) nameRef.current?.focus();
+    if (deal.pending && !deal.address) addressRef.current?.focus();
+    else if (!deal.clientName) nameRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal.id]);
 
@@ -73,12 +82,71 @@ export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPr
                 </button>
               ))}
             </div>
-            <span>Closed {shortDate(deal.closeDate)}</span>
-            <span>{money(deal.price)}</span>
+            {deal.pending ? (
+              <span className="rounded-full bg-blue-tint text-blue px-2.5 h-6 inline-flex items-center text-[12px] font-medium">Closing later this year</span>
+            ) : (
+              <>
+                <span>Closed {shortDate(deal.closeDate)}</span>
+                <span>{money(deal.price)}</span>
+              </>
+            )}
           </div>
-          <h1 className={`mt-4 text-[26px] md:text-[32px] font-bold leading-tight tracking-[-0.01em] ${deal.excluded ? 'line-through' : ''}`}>
-            {deal.address}
-          </h1>
+          {deal.pending ? (
+            <div className="mt-5 grid sm:grid-cols-[1fr_190px_190px] gap-3">
+              <div>
+                <Label htmlFor="address">Property address</Label>
+                <input
+                  id="address"
+                  ref={addressRef}
+                  className={inputClass}
+                  value={deal.address}
+                  placeholder="123 Main St"
+                  onChange={(e) => set({ address: e.target.value })}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <Label htmlFor="closeDate">Expected closing</Label>
+                <input
+                  id="closeDate"
+                  type="date"
+                  className={inputClass}
+                  value={deal.closeDate}
+                  min={pendingMinDate()}
+                  max={ASSESSMENT.end}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    set({ closeDate: v && v >= ASSESSMENT.start && v <= ASSESSMENT.end ? v : '' });
+                  }}
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate">$</span>
+                  <input
+                    id="price"
+                    inputMode="decimal"
+                    className={`${inputClass} pl-8`}
+                    value={priceText}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^0-9.]/g, '');
+                      setPriceText(v);
+                      const price = toNumber(v) ?? 0;
+                      set({ price });
+                      const p = toNumber(deal.commissionPct);
+                      if (p !== null) setGciText(String(Math.round(price * p) / 100));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <h1 className={`mt-4 text-[26px] md:text-[32px] font-bold leading-tight tracking-[-0.01em] ${deal.excluded ? 'line-through' : ''}`}>
+              {deal.address}
+            </h1>
+          )}
           {deal.fromDual && (
             <p className="mt-2 text-[15px] text-slate">
               Dual deal. This is the {deal.side.toLowerCase()} side; you'll answer for the other client separately.
@@ -97,7 +165,9 @@ export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPr
           <div className="px-6 md:px-8 py-7 space-y-9">
             <div>
               <Label htmlFor="client">
-                {deal.side === 'Buyer' ? 'Who was the buyer?' : 'Who was the seller?'}
+                {deal.pending
+                  ? deal.side === 'Buyer' ? 'Who is the buyer?' : 'Who is the seller?'
+                  : deal.side === 'Buyer' ? 'Who was the buyer?' : 'Who was the seller?'}
               </Label>
               <input
                 id="client"
@@ -170,7 +240,9 @@ export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPr
             <div>
               <p className="text-[15px] font-medium">Your commission on this side</p>
               <p className="text-[13px] text-slate mt-0.5 mb-3">
-                Filled in from your export. Change anything that looks off; % and GCI update each other.
+                {deal.pending
+                  ? 'Your best estimate is fine. % and GCI update each other.'
+                  : "Filled in from your export. Change anything that looks off; % and GCI update each other."}
               </p>
               <div className="grid sm:grid-cols-3 gap-3">
                 <div>
@@ -242,10 +314,20 @@ export const DealCard: React.FC<Props> = ({ deals, index, onUpdate, onNext, onPr
             <ArrowLeft size={16} /> {returnToReview ? 'Back to review' : 'Previous'}
           </Button>
           <div className="flex items-center gap-2 ml-auto sm:ml-0">
-            {!deal.excluded && (
-              <Button variant="quiet" onClick={() => set({ excluded: true })} title="Not your deal, or it shouldn't count">
-                <EyeOff size={16} /> Leave out
-              </Button>
+            {deal.pending ? (
+              <ConfirmButton
+                onConfirm={onRemove}
+                confirmLabel="Click again to remove"
+                className="inline-flex items-center gap-2 h-11 px-4 rounded-full text-[15px] font-medium text-slate hover:text-ink"
+              >
+                <Trash2 size={16} /> Remove deal
+              </ConfirmButton>
+            ) : (
+              !deal.excluded && (
+                <Button variant="quiet" onClick={() => set({ excluded: true })} title="Not your deal, or it shouldn't count">
+                  <EyeOff size={16} /> Leave out
+                </Button>
+              )
             )}
             {missing.length > 0 && !returnToReview ? (
               <Button variant="secondary" onClick={onNext}>

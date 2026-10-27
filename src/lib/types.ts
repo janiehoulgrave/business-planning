@@ -15,6 +15,7 @@ export interface Deal {
   commissionPct: string; // entered as a percent, e.g. "2.5"
   netIncome: string; // dollars, as typed
   excluded: boolean;
+  pending?: boolean; // added by hand: expected to close later in the assessment year
 }
 
 export type Step = 'instructions' | 'upload' | 'enrich' | 'review' | 'expenses' | 'done';
@@ -50,6 +51,11 @@ export const gci = (deal: Deal): number | null => {
 export const missingFields = (deal: Deal): string[] => {
   if (deal.excluded) return [];
   const missing: string[] = [];
+  if (deal.pending) {
+    if (!deal.address.trim()) missing.push('Address');
+    if (!deal.closeDate) missing.push('Closing date');
+    if (!(deal.price > 0)) missing.push('Price');
+  }
   if (!deal.clientName.trim()) missing.push('Client');
   if (!deal.source) missing.push('Source');
   const src = sourceByKey(deal.source);
@@ -74,3 +80,34 @@ export const shortDate = (iso: string) => {
 
 export const workbookFileName = (agentName: string) =>
   `Business_Plan_${ASSESSMENT.year}_${agentName.trim().replace(/[^a-z0-9]+/gi, '_')}.xlsx`;
+
+const isoToday = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// Earliest closing date allowed for a deal added by hand (today, but never before the assessment year).
+export const pendingMinDate = () => {
+  const t = isoToday();
+  return t < ASSESSMENT.start ? ASSESSMENT.start : t > ASSESSMENT.end ? ASSESSMENT.end : t;
+};
+
+export const newPendingDeal = (side: Side = 'Buyer'): Deal => ({
+  id: 'p' + Math.random().toString(36).slice(2, 11),
+  address: '',
+  closeDate: '',
+  price: 0,
+  side,
+  fromDual: false,
+  clientName: '',
+  source: '',
+  sourceDetail: '',
+  commissionPct: '',
+  netIncome: '',
+  excluded: false,
+  pending: true,
+});
+
+// A hand-added deal with nothing filled in yet (dropped if the agent backs out).
+export const isBlankPending = (d: Deal) =>
+  !!d.pending && !d.address.trim() && !d.closeDate && !(d.price > 0) && !d.clientName.trim() && !d.source && !d.commissionPct;

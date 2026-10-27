@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, ArrowRight, Plus } from 'lucide-react';
+import { AlertCircle, ArrowRight, CalendarPlus, Plus } from 'lucide-react';
 import { ASSESSMENT, SOURCES, sourceByKey } from '../config';
 import { Deal, gci, missingFields, money, shortDate } from '../lib/types';
 import { DealStrip } from './DealStrip';
@@ -9,6 +9,7 @@ interface Props {
   deals: Deal[];
   onEdit: (i: number) => void;
   onAddFiles: () => void;
+  onAddPending: () => void;
   onBuild: () => void;
   onSkipExpenses: () => void;
   building: boolean;
@@ -17,7 +18,7 @@ interface Props {
 const compact = (n: number) =>
   n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2)}M` : n >= 1000 ? `$${Math.round(n / 1000)}K` : money(n);
 
-export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, onSkipExpenses, building }) => {
+export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onAddPending, onBuild, onSkipExpenses, building }) => {
   const included = deals.filter((d) => !d.excluded);
   const incomplete = included.filter((d) => missingFields(d).length > 0);
   const volume = included.reduce((s, d) => s + d.price, 0);
@@ -88,10 +89,22 @@ export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, on
                     } ${missing.length ? 'bg-[#fffaf2]' : ''}`}
                   >
                     <div className="min-w-0">
-                      <div className={`text-[16px] font-medium truncate ${d.excluded ? 'line-through' : ''}`}>{d.address}</div>
+                      <div className={`text-[16px] font-medium truncate ${d.excluded ? 'line-through' : ''}`}>
+                        {d.address || <span className="text-amber">Address needed</span>}
+                      </div>
                       <div className="text-[13px] text-slate">
-                        {shortDate(d.closeDate)}, {money(d.price)}
-                        {d.fromDual ? ', dual' : ''}
+                        {d.pending ? (
+                          <>
+                            <span className="text-blue font-medium">Closing later</span>
+                            {d.closeDate ? `, expected ${shortDate(d.closeDate)}` : ''}
+                            {d.price > 0 ? `, ${money(d.price)}` : ''}
+                          </>
+                        ) : (
+                          <>
+                            {shortDate(d.closeDate)}, {money(d.price)}
+                            {d.fromDual ? ', dual' : ''}
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="text-[15px] truncate">
@@ -125,6 +138,18 @@ export const Review: React.FC<Props> = ({ deals, onEdit, onAddFiles, onBuild, on
           </section>
         );
       })}
+
+      <Panel className="mt-10 p-6 md:p-7 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+        <div>
+          <h2 className="text-[18px] font-bold">Have deals closing before December 31?</h2>
+          <p className="mt-1 text-[15px] text-slate max-w-[52ch]">
+            Add deals that are under contract or expected to close later this year, so your workbook reflects your full {ASSESSMENT.year}.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={onAddPending} className="shrink-0">
+          <CalendarPlus size={16} /> Add a deal closing later
+        </Button>
+      </Panel>
 
       <div className="mt-12 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-4">
         <Button variant="quiet" onClick={onAddFiles}>

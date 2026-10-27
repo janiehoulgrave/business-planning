@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { WEBHOOK_URL } from './config';
 import { Agent, cloudEnabled, forgetDriveToken, getDriveToken, clearProgress, loadProgress, saveProgress, SaveStatus, signOut, watchAgent } from './lib/store';
-import { Deal, missingFields, SavedState, workbookFileName } from './lib/types';
+import { Deal, isBlankPending, missingFields, newPendingDeal, SavedState, workbookFileName } from './lib/types';
 import { saveFile } from './lib/download';
 import { DriveError, uploadAsGoogleSheet } from './lib/drive';
 import { TopBar } from './components/TopBar';
@@ -107,15 +107,26 @@ const App: React.FC = () => {
 
   const updateDeal = (d: Deal) => setState((s) => ({ ...s, deals: s.deals.map((x) => (x.id === d.id ? d : x)) }));
 
+  // Back to review, dropping a hand-added deal the agent never filled in.
+  const toReview = (s: SavedState): SavedState => ({ ...s, step: 'review', deals: s.deals.filter((d) => !isBlankPending(d)) });
+
+  const addPending = () =>
+    setState((s) => {
+      const deals = [...s.deals, newPendingDeal()];
+      return { ...s, deals, index: deals.length - 1, step: 'enrich', reachedReview: true };
+    });
+
+  const removeDeal = (id: string) => setState((s) => ({ ...s, step: 'review', deals: s.deals.filter((d) => d.id !== id) }));
+
   const next = () =>
     setState((s) => {
-      if (s.reachedReview) return { ...s, step: 'review' };
+      if (s.reachedReview) return toReview(s);
       if (s.index < s.deals.length - 1) return { ...s, index: s.index + 1 };
       return { ...s, step: 'review', reachedReview: true };
     });
 
   const prev = () =>
-    setState((s) => (s.reachedReview ? { ...s, step: 'review' } : { ...s, index: Math.max(0, s.index - 1) }));
+    setState((s) => (s.reachedReview ? toReview(s) : { ...s, index: Math.max(0, s.index - 1) }));
 
   // Skipping expenses leaves the Expenses tab blank for the agent to fill in later.
   const makeWorkbook = async (skipExpenses = !!state.expensesSkipped) => {
@@ -256,6 +267,7 @@ const App: React.FC = () => {
             onPrev={prev}
             onJump={(i) => patch({ index: i })}
             returnToReview={state.reachedReview}
+            onRemove={() => removeDeal(state.deals[state.index].id)}
           />
         ) : null;
         break;
@@ -266,6 +278,7 @@ const App: React.FC = () => {
             building={building}
             onEdit={(i) => patch({ index: i, step: 'enrich' })}
             onAddFiles={() => patch({ step: 'upload' })}
+            onAddPending={addPending}
             onBuild={() => patch({ step: 'expenses' })}
             onSkipExpenses={() => build(false)}
           />
