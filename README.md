@@ -17,10 +17,10 @@ tag each deal with a client and source of business, and download a finished work
 2. **Firestore rules.** Add the block in `firestore-rules-addition.txt` to the existing rules. Do not replace them.
 3. **Authorized domain.** Firebase console > Authentication > Settings > Authorized domains > Add domain,
    and add this app's subdomain (`bp.janienation.com`).
-4. **Zapier.** Create a Zap with a "Webhooks by Zapier: Catch Hook" trigger and paste its URL into
-   `WEBHOOK_URL` in `src/config.ts`. The hook receives `file` (the .xlsx), `agentName`, `agentEmail`, `dealCount`.
-   Actions: Gmail "Send Email" with `file` as the attachment, and Google Drive "Upload File" with `file`.
-   In the Drive step, leave "Convert to Document" set to No so the formulas stay intact.
+4. **Drive backup.** Every finished workbook is saved to a Google Drive folder by a small Google Apps Script
+   (no Zapier). Follow the steps at the top of `drive-backup-apps-script.gs`, then paste the web app's
+   `/exec` URL into `DRIVE_BACKUP_URL` in `src/config.ts`. Files are named
+   `Agent Name (email) - Business Plan 2026.xlsx`; building again replaces that agent's earlier copy.
 5. **Open in Google Sheets.** In the Google Cloud console for the SignatureStudio project
    (console.cloud.google.com, same project ID as Firebase): APIs & Services > Library > enable **Google Drive API**.
    Then APIs & Services > OAuth consent screen > Data access (or Scopes) > add `.../auth/drive.file`.

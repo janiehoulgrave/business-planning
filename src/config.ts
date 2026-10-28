@@ -16,10 +16,12 @@ export const GOAL_YEAR = ASSESSMENT.year + 1;
 
 export const APP_NAME = 'Business Planning Series';
 
-// Zapier "Catch Hook" URL. The finished spreadsheet is sent here
-// so Zapier can email it to the agent and save a copy to Drive.
-// Leave as-is to turn the email step off (downloads still work).
-export const WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/21530697/4mnbms9/';
+// Google Apps Script web app that saves a copy of each finished workbook to the
+// program's Drive folder (see drive-backup-apps-script.gs). Paste the deployment's
+// /exec URL here. Leave empty to turn the backup off (agents can still download).
+export const DRIVE_BACKUP_URL = '';
+// Must match KEY in the Apps Script.
+export const DRIVE_BACKUP_KEY = 'TZEUPyu99jIhrqgA_b4pwFOXCJk7EzFh';
 
 // Only these email domains can sign in.
 export const ALLOWED_DOMAIN = 'compass.com';

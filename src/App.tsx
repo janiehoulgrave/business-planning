@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { WEBHOOK_URL } from './config';
 import { Agent, cloudEnabled, forgetDriveToken, getDriveToken, clearProgress, loadProgress, saveProgress, SaveStatus, signOut, watchAgent } from './lib/store';
 import { Deal, isBlankPending, missingFields, newPendingDeal, SavedState, workbookFileName } from './lib/types';
 import { saveFile } from './lib/download';
+import { backupReady, backupToDrive } from './lib/backup';
 import { DriveError, uploadAsGoogleSheet } from './lib/drive';
 import { TopBar } from './components/TopBar';
 import { Welcome } from './components/Welcome';
@@ -17,7 +17,6 @@ import { ExpensesStep } from './components/ExpensesStep';
 const EMPTY: SavedState = { deals: [], fileNames: [], step: 'instructions', index: 0, reachedReview: false, submittedAt: null };
 const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-const webhookReady = !import.meta.env.VITE_PREVIEW && WEBHOOK_URL.startsWith('https://');
 
 
 // Loads the spreadsheet builder (kept in a separate file so the first page loads fast).
@@ -68,7 +67,7 @@ const App: React.FC = () => {
       if (cancelled) return;
       if (saved && saved.deals?.length) {
         setState({ ...EMPTY, ...saved });
-        if (saved.step === 'done') setEmailStatus(webhookReady ? 'earlier' : 'off');
+        if (saved.step === 'done') setEmailStatus(backupReady ? 'earlier' : 'off');
       } else setState(EMPTY);
       setLoaded(true);
     });
@@ -140,18 +139,9 @@ const App: React.FC = () => {
     try {
       const buf = await makeWorkbook(!withExpenses);
       let status: EmailStatus = 'off';
-      if (webhookReady) {
-        try {
-          const form = new FormData();
-          form.append('file', new Blob([buf], { type: XLSX_TYPE }), workbookFileName(agent.name));
-          form.append('agentName', agent.name);
-          form.append('agentEmail', agent.email);
-          form.append('dealCount', String(state.deals.filter((d) => !d.excluded).length));
-          const res = await fetch(WEBHOOK_URL, { method: 'POST', body: form });
-          status = res.ok ? 'sent' : 'failed';
-        } catch {
-          status = 'failed';
-        }
+      if (backupReady) {
+        const dealCount = state.deals.filter((d) => !d.excluded).length;
+        status = (await backupToDrive(buf, { name: agent.name, email: agent.email }, dealCount)) ? 'sent' : 'failed';
       }
       setEmailStatus(status);
       patch({ step: 'done', submittedAt: new Date().toISOString(), sheetUrl: null, expensesSkipped: !withExpenses });
